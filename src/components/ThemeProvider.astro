@@ -3,7 +3,12 @@
 ---
 <script is:inline>
   window.StarlightThemeProvider = (() => {
-    // Prefer the landing page's 'theme' key, fall back to Starlight's own key, then system.
+    if (typeof localStorage !== 'undefined' && !localStorage.getItem('sybra-theme-v2')) {
+      localStorage.removeItem('theme');
+      localStorage.removeItem('starlight-theme');
+      localStorage.setItem('sybra-theme-v2', '1');
+    }
+    // Prefer the landing page's 'theme' key, fall back to Starlight's own key, then light default.
     const storedTheme =
       (typeof localStorage !== 'undefined' &&
         (localStorage.getItem('theme') || localStorage.getItem('starlight-theme'))) ||

@@ -15,8 +15,14 @@ const docsUrl = '/getting-started/';
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script is:inline>
+      if (!localStorage.getItem('sybra-theme-v2')) {
+        localStorage.removeItem('theme');
+        localStorage.removeItem('starlight-theme');
+        localStorage.setItem('sybra-theme-v2', '1');
+      }
       const t = localStorage.getItem('theme') || localStorage.getItem('starlight-theme') || 'light';
       document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('theme', t);
       localStorage.setItem('starlight-theme', t);
     </script>
   </head>
