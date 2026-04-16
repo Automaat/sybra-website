@@ -8,10 +8,11 @@
       localStorage.removeItem('starlight-theme');
       localStorage.setItem('sybra-theme-v2', '1');
     }
-    // Prefer the landing page's 'theme' key, fall back to Starlight's own key, then light default.
+    // Prefer Starlight's key (updated live by its theme picker inside docs),
+    // fall back to the landing page's 'theme' key, then to the light default.
     const storedTheme =
       (typeof localStorage !== 'undefined' &&
-        (localStorage.getItem('theme') || localStorage.getItem('starlight-theme'))) ||
+        (localStorage.getItem('starlight-theme') || localStorage.getItem('theme'))) ||
       null;
     const theme = storedTheme || 'light';
     const resolved = theme === 'light' ? 'light' : 'dark';
