@@ -1,0 +1,120 @@
+---
+title: Claude Code skills
+description: Skills shipped by Sybra, what each does, and how the sync works.
+---
+
+Sybra bundles Claude Code skills from two sources. On app startup, they are synced to `~/.claude/skills/` and `~/.codex/skills/` so any Claude Code or Codex session can use them.
+
+- **Embedded** — `internal/skills/data/synapse-*.md` lives inside the compiled binary. Eight files ship today; they are the default source when Sybra can't find a filesystem copy.
+- **Filesystem** — `.claude/skills/plan-critic/` in the Sybra repo is a directory skill synced alongside the embedded set. When the repo is checked out next to a running app, filesystem copies take precedence over the embedded ones.
+
+## Shipped skills
+
+### `synapse-tasks`
+
+Task CRUD via `sybra-cli`. Lists, creates, updates, and deletes tasks with `sybra-cli --json` for machine parsing.
+
+### `synapse-triage`
+
+Opinionated triage workflow. Walks through `new` tasks, proposes a classification (type, tags, mode, project), asks to confirm, and applies.
+
+### `synapse-plan`
+
+Writes an implementation plan for a task and saves it into the task's frontmatter.
+
+### `synapse-evaluate`
+
+LLM-judge evaluation helper. Scores agent output against a rubric.
+
+### `synapse-test-plan`
+
+Drafts a manual test plan for a task under `test-plan-review`.
+
+### `synapse-audit`
+
+Audit-log diagnostics. Summarizes recent events for a task or window.
+
+### `synapse-monitor`
+
+Runs the anomaly detector once and reports findings.
+
+### `synapse-self-monitor`
+
+Retrospective judge. Scores recent runs and surfaces patterns.
+
+### `plan-critic`
+
+Multi-persona plan review. Triggers on "review this plan", "critique this plan", "is this plan good".
+
+Spawns parallel subagents (Skeptic, Architect, Verifier), returns a verdict (Approve / Reject / Refine) with refinements.
+
+## The sync
+
+On app start, Sybra runs `syncSkills()` in `internal/sybra/app.go`:
+
+1. Prefer the filesystem `.claude/skills/` tree if it is present alongside the app.
+2. Otherwise, fall back to the embedded `internal/skills/data/` bundle.
+3. Copy each file into `~/.claude/skills/` and `~/.codex/skills/` (overwriting).
+4. Copy `orchestrator/CLAUDE.md` to `~/.sybra/CLAUDE.md` (the orchestrator brain).
+
+The sync is one-way. Edits to managed files under `~/.claude/skills/` are overwritten on next start. Edit the source in the Sybra repo instead.
+
+## Skill file structure
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md                    # The skill definition (YAML frontmatter + prose)
+├── README.md                   # Optional — for humans
+└── scripts/                    # Optional — invoked by the skill
+```
+
+### `SKILL.md` frontmatter
+
+```yaml
+---
+name: synapse-tasks
+description: Task CRUD for Sybra via sybra-cli.
+---
+```
+
+The `description` is what Claude Code uses to decide whether to invoke the skill. Be specific — vague descriptions trigger in the wrong contexts.
+
+## Writing your own skill
+
+To add a skill to the Sybra-synced set, pick the source that fits:
+
+1. **Simple Markdown skill** — add `your-skill.md` to `internal/skills/data/` and rebuild the binary.
+2. **Directory skill** — add `.claude/skills/<your-skill>/` to the Sybra repo. The filesystem copy is picked up on next start.
+
+Skills are Markdown. No special format beyond the frontmatter. Claude Code loads the full content when the skill is triggered.
+
+## The orchestrator brain
+
+The orchestrator's system prompt lives at `orchestrator/CLAUDE.md` in the Sybra repo. On app start, it's copied to `~/.sybra/CLAUDE.md`.
+
+The orchestrator's conversational loop starts Claude Code with `--working-directory ~/.sybra/` so this CLAUDE.md loads as project context.
+
+The file covers:
+
+- Triage rules (type, tags, mode, project assignment)
+- Dispatch logic (when to start an agent, concurrency)
+- Monitoring (what to flag, when to escalate)
+- Failure handling (retry vs escalate)
+- Escalation criteria (cost, turns, repeated errors)
+- Communication patterns (how to ask clarifying questions)
+
+Edit this file to change the orchestrator's behavior. Changes take effect on next orchestrator restart — click **Stop** then **Start** on the Orchestrator page.
+
+## Where skills come from
+
+- **Sybra-shipped**: embedded `synapse-*` bundle plus filesystem `plan-critic/` → synced on start
+- **Claude Code global**: `~/.claude/skills/` — user skills, survive Sybra sync (only names matching a shipped skill get overwritten)
+- **Project-local**: `<project>/.claude/skills/` — skills visible only when Claude Code runs in that project
+
+Sybra only manages the first. The others are untouched.
+
+## Which get overwritten
+
+By default, only files and directories whose names match a Sybra-shipped skill (`synapse-audit`, `synapse-evaluate`, `synapse-monitor`, `synapse-plan`, `synapse-self-monitor`, `synapse-tasks`, `synapse-test-plan`, `synapse-triage`, `plan-critic`) are overwritten. Custom skills in `~/.claude/skills/` are preserved.
+
+To audit: check the sync log line on startup in `~/.sybra/logs/sybra.log`. Each synced skill is listed.
