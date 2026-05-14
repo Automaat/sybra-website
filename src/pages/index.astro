@@ -87,8 +87,6 @@ const docsUrl = '/getting-started/';
             <p class="hero-desc" style="color: var(--color-muted); max-width: 480px; line-height: 1.65;">
               Local-first task management for agent swarms.
               Headless or interactive. Git-isolated per task.
-              Local-first. Headless or interactive.
-              Git-isolated per task.
             </p>
             <div class="flex items-center gap-4">
               <a href={`${ghUrl}/releases`} target="_blank" rel="noopener"
@@ -193,7 +191,7 @@ const docsUrl = '/getting-started/';
               body: 'Declare project_types per machine. Work is never duplicated between your laptop and home server — each handles its own queue.',
               tag: 'Deployment',
             },
-          ].map((f, i) => (
+          ].map((f) => (
             <div class="feature-row reveal">
               <div class="shrink-0 w-10">
                 <span class="feature-num">{f.n}</span>
